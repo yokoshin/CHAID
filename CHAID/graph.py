@@ -14,13 +14,17 @@ except ImportError:
     # for use with this module.
     import shutil
     from tempfile import mkdtemp
+
     class TemporaryDirectory(object):
         def __init__(self):
             self.name = mkdtemp()
+
         def __enter__(self):
             return self.name
+
         def __exit__(self, *args):
             shutil.rmtree(self.name, ignore_errors=True)
+
 
 FIG_BASE = {
     "layout": {
@@ -47,6 +51,7 @@ TABLE_CELLS_CONFIG = {
     "fill_color": ["#EBC1EE", "#EDEAFB"],
 }
 
+
 class Graph(object):
     """
     Visualisation of the tree
@@ -61,7 +66,9 @@ class Graph(object):
 
     def render(self, path, view):
         if path is None:
-            path = os.path.join("trees", "{:%Y-%m-%d %H:%M:%S}.gv".format(datetime.now()))
+            path = os.path.join(
+                "trees", "{:%Y-%m-%d %H:%M:%S}.gv".format(datetime.now())
+            )
         with TemporaryDirectory() as self.tempdir:
             g = Digraph(
                 format="png",
@@ -72,7 +79,9 @@ class Graph(object):
                 image = self.bar_chart(node)
                 g.node(str(node.node_id), image=image)
                 if node.parent is not None:
-                    edge_label = "     ({})     \n ".format(', '.join(map(str, node.choices)))
+                    edge_label = "     ({})     \n ".format(
+                        ", ".join(map(str, node.choices))
+                    )
                     g.edge(str(node.parent), str(node.node_id), xlabel=edge_label)
             g.render(path, view=view)
 

@@ -19,7 +19,10 @@ class Split(object):
     invalid_reason : InvalidSplitReason()
         The reason why the node failed to split
     """
-    def __init__(self, column, splits, score, p, dof, invalid_reason=None, split_name=None):
+
+    def __init__(
+        self, column, splits, score, p, dof, invalid_reason=None, split_name=None
+    ):
         splits = splits or []
         self.surrogates = []
         self.column_id = column
@@ -32,14 +35,14 @@ class Split(object):
         self._invalid_reason = invalid_reason
 
     def sub_split_values(self, sub):
-        """ Substitutes the splits with other values into the split_map """
+        """Substitutes the splits with other values into the split_map"""
         for i, arr in enumerate(self.splits):
             self.split_map[i] = [sub.get(x, x) for x in arr]
         for split in self.surrogates:
             split.sub_split_values(sub)
 
     def name_columns(self, sub):
-        """ Substitutes the split column index with a human readable string """
+        """Substitutes the split column index with a human readable string"""
         if self.column_id is not None and len(sub) > self.column_id:
             self.split_name = sub[self.column_id]
         for split in self.surrogates:
@@ -47,9 +50,11 @@ class Split(object):
 
     def __repr__(self):
         if not self.valid():
-            return '<Invalid Chaid Split> - {}'.format(self.invalid_reason)
-        format_str = u'({0.column}, p={0.p}, score={0.score}, groups={0.groupings})'\
-                     ', dof={0.dof})'
+            return "<Invalid Chaid Split> - {}".format(self.invalid_reason)
+        format_str = (
+            "({0.column}, p={0.p}, score={0.score}, groups={0.groupings})"
+            ", dof={0.dof})"
+        )
         return format_str.format(self)
 
     @property
