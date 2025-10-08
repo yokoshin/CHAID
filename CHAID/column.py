@@ -3,14 +3,17 @@ from math import isnan
 from itertools import combinations
 from .mapping_dict import MappingDict
 
+
 def is_sorted(ndarr, nan_val=None):
     store = []
     for arr in ndarr:
-        if arr == [] or len(arr) == 1: continue
+        if arr == [] or len(arr) == 1:
+            continue
         if nan_val is not None and nan_val in arr:
             arr.remove(nan_val)
         store.append(arr[-1] - arr[0] == len(arr) - 1)
     return all(store)
+
 
 class Column(object):
     """
@@ -28,8 +31,16 @@ class Column(object):
         Whether the objects in the given array need to be substitued for
         integers
     """
-    def __init__(self, arr=None, metadata=None, missing_id='<missing>',
-                 substitute=True, weights=None, name=None):
+
+    def __init__(
+        self,
+        arr=None,
+        metadata=None,
+        missing_id="<missing>",
+        substitute=True,
+        weights=None,
+        name=None,
+    ):
         self.metadata = dict(metadata or {})
         self.arr = np.array(arr)
         self._missing_id = missing_id
@@ -66,17 +77,22 @@ class Column(object):
         Calculates the Bell set
         """
         if len(collection) == 1:
-            yield [ collection ]
+            yield [collection]
             return
 
         first = collection[0]
         for smaller in self.bell_set(collection[1:]):
             for n, subset in enumerate(smaller):
-                if not ordinal or (ordinal and is_sorted(smaller[:n] + [[ first ] + subset] + smaller[n+1:], self._nan)):
-                    yield smaller[:n] + [[ first ] + subset] + smaller[n+1:]
+                if not ordinal or (
+                    ordinal
+                    and is_sorted(
+                        smaller[:n] + [[first] + subset] + smaller[n + 1 :], self._nan
+                    )
+                ):
+                    yield smaller[:n] + [[first] + subset] + smaller[n + 1 :]
 
-            if not ordinal or (ordinal and is_sorted([ [ first ] ] + smaller, self._nan)):
-                yield [ [ first ] ] + smaller
+            if not ordinal or (ordinal and is_sorted([[first]] + smaller, self._nan)):
+                yield [[first]] + smaller
 
 
 class NominalColumn(Column):
@@ -84,9 +100,19 @@ class NominalColumn(Column):
     A column containing numerical values that are unrelated to
     one another (i.e. do not follow a progression)
     """
-    def __init__(self, arr=None, metadata=None, missing_id='<missing>',
-                 substitute=True, weights=None, name=None):
-        super(self.__class__, self).__init__(arr, metadata=metadata, missing_id=missing_id, weights=weights, name=name)
+
+    def __init__(
+        self,
+        arr=None,
+        metadata=None,
+        missing_id="<missing>",
+        substitute=True,
+        weights=None,
+        name=None,
+    ):
+        super(self.__class__, self).__init__(
+            arr, metadata=metadata, missing_id=missing_id, weights=weights, name=name
+        )
         if substitute and metadata is None:
             self.substitute_values(arr)
 
@@ -98,8 +124,14 @@ class NominalColumn(Column):
         """
         Returns a deep copy.
         """
-        return NominalColumn(self.arr, metadata=self.metadata, name=self.name,
-                             missing_id=self._missing_id, substitute=False, weights=self.weights)
+        return NominalColumn(
+            self.arr,
+            metadata=self.metadata,
+            name=self.name,
+            missing_id=self._missing_id,
+            substitute=False,
+            weights=self.weights,
+        )
 
     def substitute_values(self, vect):
         """
@@ -120,13 +152,11 @@ class NominalColumn(Column):
         except:
             unique = set(vect)
 
-        unique = [
-            x for x in unique if not isinstance(x, float) or not isnan(x)
-        ]
+        unique = [x for x in unique if not isinstance(x, float) or not isnan(x)]
 
         arr = np.copy(vect)
         for new_id, value in enumerate(unique):
-            np.place(arr, arr==value, new_id)
+            np.place(arr, arr == value, new_id)
             self.metadata[new_id] = value
         arr = arr.astype(np.float)
         np.place(arr, np.isnan(arr), -1)
@@ -137,7 +167,13 @@ class NominalColumn(Column):
 
     def __getitem__(self, key):
         new_weights = None if self.weights is None else self.weights[key]
-        return NominalColumn(self.arr[key], metadata=self.metadata, substitute=False, weights=new_weights, name=self.name)
+        return NominalColumn(
+            self.arr[key],
+            metadata=self.metadata,
+            substitute=False,
+            weights=new_weights,
+            name=self.name,
+        )
 
     def __setitem__(self, key, value):
         self.arr[key] = value
@@ -164,16 +200,27 @@ class NominalColumn(Column):
         """
         Returns a string representing the type
         """
-        return 'nominal'
+        return "nominal"
 
 
 class OrdinalColumn(Column):
     """
     A column containing integer values that have an order
     """
-    def __init__(self, arr=None, metadata=None, missing_id='<missing>',
-                 groupings=None, substitute=True, weights=None, name=None):
-        super(self.__class__, self).__init__(arr, metadata, missing_id=missing_id, weights=weights, name=name)
+
+    def __init__(
+        self,
+        arr=None,
+        metadata=None,
+        missing_id="<missing>",
+        groupings=None,
+        substitute=True,
+        weights=None,
+        name=None,
+    ):
+        super(self.__class__, self).__init__(
+            arr, metadata, missing_id=missing_id, weights=weights, name=name
+        )
         self._nan = np.array([np.nan]).astype(int)[0]
 
         if substitute and metadata is None:
@@ -181,7 +228,7 @@ class OrdinalColumn(Column):
         elif substitute and metadata and not np.issubdtype(self.arr.dtype, np.integer):
             # custom metadata has been passed in from external source, and must be converted to int
             self.arr = self.arr.astype(int)
-            self.metadata = { int(k):v for k, v in metadata.items() }
+            self.metadata = {int(k): v for k, v in metadata.items()}
             self.metadata[self._nan] = missing_id
 
         self._groupings = {}
@@ -210,15 +257,27 @@ class OrdinalColumn(Column):
         """
         Returns a deep copy.
         """
-        return OrdinalColumn(self.arr, metadata=self.metadata, name=self.name,
-                             missing_id=self._missing_id, substitute=True,
-                             groupings=self._groupings, weights=self.weights)
+        return OrdinalColumn(
+            self.arr,
+            metadata=self.metadata,
+            name=self.name,
+            missing_id=self._missing_id,
+            substitute=True,
+            groupings=self._groupings,
+            weights=self.weights,
+        )
 
     def __getitem__(self, key):
         new_weights = None if self.weights is None else self.weights[key]
-        return OrdinalColumn(self.arr[key], metadata=self.metadata, name=self.name,
-                             missing_id=self._missing_id, substitute=True,
-                             groupings=self._groupings, weights=new_weights)
+        return OrdinalColumn(
+            self.arr[key],
+            metadata=self.metadata,
+            name=self.name,
+            missing_id=self._missing_id,
+            substitute=True,
+            groupings=self._groupings,
+            weights=new_weights,
+        )
 
     def __setitem__(self, key, value):
         self.arr[key] = value
@@ -227,7 +286,8 @@ class OrdinalColumn(Column):
     def groups(self):
         vals = self._groupings.values()
         return [
-            [x for x in range(minmax[0], minmax[1])] + ([self._nan] if minmax[2] else [])
+            [x for x in range(minmax[0], minmax[1])]
+            + ([self._nan] if minmax[2] else [])
             for minmax in vals
         ]
 
@@ -236,12 +296,15 @@ class OrdinalColumn(Column):
             ranges = sorted(self._groupings.items())
             candidates = zip(ranges[0:], ranges[1:])
             self._possible_groups = [
-                (k1, k2) for (k1, minmax1), (k2, minmax2) in candidates
+                (k1, k2)
+                for (k1, minmax1), (k2, minmax2) in candidates
                 if minmax1[1] == minmax2[0]
             ]
             if self._nan in self.arr:
                 self._possible_groups += [
-                    (key, self._nan) for key in self._groupings.keys() if key != self._nan
+                    (key, self._nan)
+                    for key in self._groupings.keys()
+                    if key != self._nan
                 ]
         return self._possible_groups.__iter__()
 
@@ -249,7 +312,6 @@ class OrdinalColumn(Column):
         bell_set = self.bell_set(sorted(list(self._groupings.keys())), True)
         next(bell_set)
         return bell_set
-
 
     def group(self, x, y):
         self._possible_groups = None
@@ -274,28 +336,40 @@ class OrdinalColumn(Column):
         """
         Returns a string representing the type
         """
-        return 'ordinal'
+        return "ordinal"
+
 
 class ContinuousColumn(Column):
     """
     A column containing numerical values on a continuous scale
     """
-    def __init__(self, arr=None, metadata=None, missing_id='<missing>',
-                 weights=None):
-        if not np.issubdtype(arr.dtype, np.number):
-            raise ValueError('Must only pass numerical values to create continuous column')
 
-        super(self.__class__, self).__init__(np.nan_to_num(arr), metadata, missing_id=missing_id, weights=weights)
+    def __init__(self, arr=None, metadata=None, missing_id="<missing>", weights=None):
+        if not np.issubdtype(arr.dtype, np.number):
+            raise ValueError(
+                "Must only pass numerical values to create continuous column"
+            )
+
+        super(self.__class__, self).__init__(
+            np.nan_to_num(arr), metadata, missing_id=missing_id, weights=weights
+        )
 
     def deep_copy(self):
         """
         Returns a deep copy.
         """
-        return ContinuousColumn(self.arr, metadata=self.metadata, missing_id=self._missing_id, weights=self.weights)
+        return ContinuousColumn(
+            self.arr,
+            metadata=self.metadata,
+            missing_id=self._missing_id,
+            weights=self.weights,
+        )
 
     def __getitem__(self, key):
         new_weights = None if self.weights is None else self.weights[key]
-        return ContinuousColumn(self.arr[key], metadata=self.metadata, weights=new_weights)
+        return ContinuousColumn(
+            self.arr[key], metadata=self.metadata, weights=new_weights
+        )
 
     def __setitem__(self, key, value):
         self.arr[key] = value
@@ -306,4 +380,4 @@ class ContinuousColumn(Column):
         """
         Returns a string representing the type
         """
-        return 'continuous'
+        return "continuous"

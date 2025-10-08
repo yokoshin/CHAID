@@ -28,7 +28,10 @@ class Node(object):
     is_terminal : boolean
         Whether the node is terminal
     """
-    def __init__(self, choices=None, split=None, indices=None, node_id=0, parent=None, dep_v=None):
+
+    def __init__(
+        self, choices=None, split=None, indices=None, node_id=0, parent=None, dep_v=None
+    ):
         indices = [] if indices is None else indices
         self.choices = list(choices or [])
         self.split = split or Split(None, None, None, None, 0)
@@ -48,7 +51,7 @@ class Node(object):
             return False
 
     def __repr__(self):
-        format_str = u'({0.choices}, {0.members}, {0.split})'
+        format_str = "({0.choices}, {0.members}, {0.split})"
         return format_str.format(self)
 
     def __lt__(self, other):
@@ -76,8 +79,8 @@ class Node(object):
             dep_v = self.dep_v
             if isinstance(dep_v, ContinuousColumn):
                 self._members = {
-                    'mean': self.dep_v.arr.mean(),
-                    's.t.d': self.dep_v.arr.std()
+                    "mean": self.dep_v.arr.mean(),
+                    "s.t.d": self.dep_v.arr.std(),
                 }
             else:
                 metadata = dep_v.metadata
@@ -88,9 +91,12 @@ class Node(object):
                 if dep_v.weights is None:
                     counts = np.transpose(np.unique(dep_v.arr, return_counts=True))
                 else:
-                    counts = np.array([
-                        [i, dep_v.weights[dep_v.arr == i].sum()] for i in set(dep_v.arr)
-                    ])
+                    counts = np.array(
+                        [
+                            [i, dep_v.weights[dep_v.arr == i].sum()]
+                            for i in set(dep_v.arr)
+                        ]
+                    )
 
                 self._members.update((metadata[k], v) for k, v in counts)
 
