@@ -45,6 +45,29 @@ class Tree(object):
         )
 
     @staticmethod
+    def _build_independent_column(values, variable_type, name=None):
+        """Create an independent column instance from raw values."""
+        column_types = {
+            "ordinal": OrdinalColumn,
+            "nominal": NominalColumn,
+        }
+        column_class = column_types.get(variable_type)
+        if column_class is None:
+            raise NotImplementedError(
+                "Unknown independent variable type " + variable_type
+            )
+        return column_class(values, name=name)
+
+    @staticmethod
+    def _build_dependent_column(values, variable_type, weights=None):
+        """Create the dependent column instance from raw values."""
+        if variable_type == "categorical":
+            return NominalColumn(values, weights=weights)
+        if variable_type == "continuous":
+            return ContinuousColumn(values, weights=weights)
+        raise NotImplementedError("Unknown dependent variable type " + variable_type)
+
+    @staticmethod
     def from_numpy(
         ndarr,
         arr,
@@ -89,27 +112,11 @@ class Tree(object):
         vectorised_array = []
         variable_types = variable_types or ["nominal"] * ndarr.shape[1]
         for ind, col_type in enumerate(variable_types):
-            title = None
-            if split_titles is not None:
-                title = split_titles[ind]
-            if col_type == "ordinal":
-                col = OrdinalColumn(ndarr[:, ind], name=title)
-            elif col_type == "nominal":
-                col = NominalColumn(ndarr[:, ind], name=title)
-            else:
-                raise NotImplementedError(
-                    "Unknown independent variable type " + col_type
-                )
+            title = split_titles[ind] if split_titles is not None else None
+            col = Tree._build_independent_column(ndarr[:, ind], col_type, name=title)
             vectorised_array.append(col)
 
-        if dep_variable_type == "categorical":
-            observed = NominalColumn(arr, weights=weights)
-        elif dep_variable_type == "continuous":
-            observed = ContinuousColumn(arr, weights=weights)
-        else:
-            raise NotImplementedError(
-                "Unknown dependent variable type " + dep_variable_type
-            )
+        observed = Tree._build_dependent_column(arr, dep_variable_type, weights)
         config = {
             "alpha_merge": alpha_merge,
             "max_depth": max_depth,
